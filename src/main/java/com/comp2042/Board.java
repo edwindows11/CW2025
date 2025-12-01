@@ -8,7 +8,7 @@ public interface Board {
 
     boolean moveBrickRight();
 
-    boolean rotateLeftBrick();
+    boolean rotateBrick();
 
     boolean createNewBrick();
 
