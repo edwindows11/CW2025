@@ -30,10 +30,6 @@ public class GameController implements InputEventListener {
 
             viewGuiController.refreshGameBackground(board.getBoardMatrix());
 
-        } else {
-            if (event.getEventSource() == EventSource.USER) {
-                board.getScore().add(1);
-            }
         }
         return new DownData(clearRow, board.getViewData());
     }
@@ -52,10 +48,9 @@ public class GameController implements InputEventListener {
 
     @Override
     public ViewData onRotateEvent(MoveEvent event) {
-        board.rotateLeftBrick();
+        board.rotateBrick();
         return board.getViewData();
     }
-
 
     @Override
     public void createNewGame() {
