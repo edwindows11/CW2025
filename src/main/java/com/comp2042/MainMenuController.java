@@ -15,17 +15,21 @@ public class MainMenuController {
     }
 
     @FXML
-    private void startButtonClicked(ActionEvent event) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getClassLoader().getResource("gameLayout.fxml"));
-        Parent root = loader.load();
-        GuiController c = loader.getController();
-        new GameController(c);
+    private void startButtonClicked(ActionEvent event) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/gameLayout.fxml"));
+            Parent root = loader.load();
+            GuiController c = loader.getController();
+            new GameController(c);
 
-        Stage stage = (Stage) ((javafx.scene.Node) event.getSource())
-                .getScene().getWindow();
+            Stage stage = (Stage) ((javafx.scene.Node) event.getSource())
+                    .getScene().getWindow();
 
-        stage.setScene(new Scene(root));
-        stage.show();
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML
