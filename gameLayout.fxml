@@ -1,0 +1,44 @@
+<?import com.comp2042.GameOverPanel?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.Group?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import java.net.URL?>
+
+<StackPane fx:controller="com.comp2042.GuiController"
+           xmlns:fx="http://javafx.com/fxml">
+
+    <Pane maxWidth="600" maxHeight="600">
+        <BorderPane styleClass="gameBoard" fx:id="gameBoard" layoutX="220" layoutY="30">
+            <center>
+                <GridPane fx:id="gamePanel" hgap="1" vgap="1" layoutY="30" layoutX="40"/>
+            </center>
+        </BorderPane>
+
+        <GridPane fx:id="brickPanel" vgap="1" hgap="1"/>
+
+        <Group fx:id="groupNotification" layoutX="220" layoutY="203">
+            <VBox alignment="CENTER">
+                <GameOverPanel fx:id="gameOverPanel"/>
+            </VBox>
+        </Group>
+
+        <VBox layoutX="50" layoutY="450">
+            <Label text="Score: " styleClass="scoreClass" />
+            <Label fx:id="scoreLabel" styleClass="scoreClass" />
+        </VBox>
+    </Pane>
+
+    <VBox fx:id="pauseMenu" alignment="CENTER" spacing="20" visible="false" style="-fx-background-color: rgba(0, 0, 0, 0.7); -fx-padding: 20;">
+        <Button text="Resume" onAction="#resumeGame" style="-fx-font-size: 20px;"/>
+        <Button text="Main Menu" onAction="#backToMenu" style="-fx-font-size: 20px;"/>
+    </VBox>
+
+    <stylesheets>
+        <URL value="@window_style.css"/>
+    </stylesheets>
+</StackPane>
