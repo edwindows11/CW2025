@@ -72,7 +72,7 @@ public class SimpleBoard implements Board {
         }
     }
 
-    // ✅ IMPLEMENT rotateBrick to satisfy the interface
+    // IMPLEMENT rotateBrick to satisfy the interface
     @Override
     public boolean rotateBrick() {
         int[][] currentMatrix = MatrixOperations.copy(currentGameMatrix);
@@ -103,7 +103,7 @@ public class SimpleBoard implements Board {
             Brick temp = holdBrick;
             holdBrick = currentBrick;
             brickRotator.setBrick(temp);
-            currentOffset = new Point(4, 0);
+            currentOffset = new Point(3, 0);
         }
 
         canHold = false;
@@ -114,7 +114,7 @@ public class SimpleBoard implements Board {
     public boolean createNewBrick() {
         Brick currentBrick = brickGenerator.getBrick();
         brickRotator.setBrick(currentBrick);
-        currentOffset = new Point(4, 0);
+        currentOffset = new Point(3, 0);
         canHold = true;
         return !MatrixOperations.intersect(currentGameMatrix, brickRotator.getCurrentShape(),
                 (int) currentOffset.getX(), (int) currentOffset.getY());
@@ -127,17 +127,22 @@ public class SimpleBoard implements Board {
 
     @Override
     public ViewData getViewData() {
+        java.util.List<int[][]> nextShapes = new java.util.ArrayList<>();
+        for (Brick b : brickGenerator.getNextBricks()) {
+            nextShapes.add(b.getShapeMatrix().get(0));
+        }
+
         return new ViewData(
                 brickRotator.getCurrentShape(),
                 (int) currentOffset.getX(),
                 (int) currentOffset.getY(),
                 getGhostY(),
-                brickGenerator.getNextBrick().getShapeMatrix().get(0),
+                nextShapes,
                 holdBrick == null ? null : holdBrick.getShapeMatrix().get(0));
     }
 
     private int getGhostY() {
-        int[][] currentMatrix = MatrixOperations.copy(currentGameMatrix);
+        int[][] currentMatrix = currentGameMatrix;
         int ghostY = (int) currentOffset.getY();
         while (true) {
             boolean conflict = MatrixOperations.intersect(currentMatrix, brickRotator.getCurrentShape(),
