@@ -10,9 +10,9 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.effect.Reflection;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -25,13 +25,20 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
 import javafx.util.Duration;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
 public class GuiController implements Initializable {
+
+    private static final int GAME_WIDTH = 600;
+    private static final int GAME_HEIGHT = 600;
+    private static final double BALLOON_ANIMATION_DURATION_BASE = 4.0;
+    private static final double BALLOON_SPAWN_INTERVAL_MS = 300;
+    private static final String BALLOON_IMAGE_PREFIX = "/balloon";
+    private static final String BALLOON_IMAGE_SUFFIX = ".png";
+    private static final int BALLOON_COUNT = 5;
 
     private static final int BRICK_SIZE = 20;
 
@@ -461,17 +468,17 @@ public class GuiController implements Initializable {
         if (balloonTimeline != null) {
             balloonTimeline.stop();
         }
-        balloonTimeline = new Timeline(new KeyFrame(Duration.millis(300), event -> {
+        balloonTimeline = new Timeline(new KeyFrame(Duration.millis(BALLOON_SPAWN_INTERVAL_MS), event -> {
             javafx.scene.Node balloon = createBalloon();
             if (balloon != null) {
-                double startX = Math.random() * 600;
+                double startX = Math.random() * GAME_WIDTH;
                 balloon.setLayoutX(startX);
-                balloon.setLayoutY(600);
+                balloon.setLayoutY(GAME_HEIGHT);
                 balloonPane.getChildren().add(balloon);
 
                 javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(
-                        Duration.seconds(4 + Math.random() * 2), balloon);
-                tt.setToY(-700);
+                        Duration.seconds(BALLOON_ANIMATION_DURATION_BASE + Math.random() * 2), balloon);
+                tt.setToY(-(GAME_HEIGHT + 100));
                 tt.setOnFinished(e -> balloonPane.getChildren().remove(balloon));
                 tt.play();
             }
@@ -481,9 +488,9 @@ public class GuiController implements Initializable {
     }
 
     private javafx.scene.Node createBalloon() {
-        int index = (int) (Math.random() * 5) + 1;
+        int index = (int) (Math.random() * BALLOON_COUNT) + 1;
         try {
-            String path = "/balloon" + index + ".png";
+            String path = BALLOON_IMAGE_PREFIX + index + BALLOON_IMAGE_SUFFIX;
             if (getClass().getResource(path) != null) {
                 ImageView imageView = new ImageView(new Image(getClass().getResourceAsStream(path)));
                 imageView.setPreserveRatio(true);
