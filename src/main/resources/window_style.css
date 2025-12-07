@@ -154,3 +154,12 @@
     -fx-font-size: 24px;
     -fx-text-fill: white;
 }
+
+.warning-label {
+    -fx-font-family: "Let's go Digital";
+    -fx-font-size: 50px;
+    -fx-text-fill: red;
+    -fx-effect: dropshadow(three-pass-box, red, 20, 0.6, 0, 0);
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
