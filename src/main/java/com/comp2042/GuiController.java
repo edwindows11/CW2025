@@ -136,6 +136,7 @@ public class GuiController implements Initializable {
             }
         });
         gameOverPanel.setVisible(false);
+        gameOverPanel.setPlayAgainAction(e -> newGame(e));
         pauseMenu.setVisible(false);
 
         final Reflection reflection = new Reflection();
@@ -439,6 +440,7 @@ public class GuiController implements Initializable {
 
     public void newGame(ActionEvent actionEvent) {
         timeLine.stop();
+        SoundManager.getInstance().stopGameOverSound();
         gameOverPanel.setVisible(false);
         eventListener.createNewGame();
         gamePanel.requestFocus();
