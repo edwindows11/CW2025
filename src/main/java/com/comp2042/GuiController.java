@@ -10,7 +10,6 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Group;
-import javafx.scene.Node;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.effect.DropShadow;
@@ -25,6 +24,8 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
+import javafx.scene.effect.Reflection;
 import javafx.util.Duration;
 
 import java.net.URL;
@@ -136,6 +137,11 @@ public class GuiController implements Initializable {
                     }
                     if (keyEvent.getCode() == KeyCode.DOWN || keyEvent.getCode() == KeyCode.S) {
                         moveDown(new MoveEvent(EventType.DOWN, EventSource.USER));
+                        keyEvent.consume();
+                    }
+                    if (keyEvent.getCode() == KeyCode.SPACE) {
+                        handleDownData(eventListener.onHardDropEvent(new MoveEvent(EventType.DOWN, EventSource.USER)));
+                        SoundManager.getInstance().playSound("hard_drop.wav");
                         keyEvent.consume();
                     }
                     if (keyEvent.getCode() == KeyCode.C) {
@@ -401,18 +407,20 @@ public class GuiController implements Initializable {
 
     private void moveDown(MoveEvent event) {
         if (!isPause.get()) {
-            DownData downData = eventListener.onDownEvent(event);
-            if (downData.getClearRow() != null && downData.getClearRow().getLinesRemoved() > 0) {
-                NotificationPanel notificationPanel = new NotificationPanel(
-                        "+" + downData.getClearRow().getScoreBonus());
-                groupNotification.getChildren().add(notificationPanel);
-                groupNotification.getChildren().add(notificationPanel);
-                notificationPanel.showScore(groupNotification.getChildren());
-                SoundManager.getInstance().playSound("clear.wav");
-            }
-            refreshBrick(downData.getViewData());
+            handleDownData(eventListener.onDownEvent(event));
         }
         gamePanel.requestFocus();
+    }
+
+    private void handleDownData(DownData downData) {
+        if (downData.getClearRow() != null && downData.getClearRow().getLinesRemoved() > 0) {
+            NotificationPanel notificationPanel = new NotificationPanel(
+                    "+" + downData.getClearRow().getScoreBonus());
+            groupNotification.getChildren().add(notificationPanel);
+            notificationPanel.showScore(groupNotification.getChildren());
+            SoundManager.getInstance().playSound("clear.wav");
+        }
+        refreshBrick(downData.getViewData());
     }
 
     public void setEventListener(InputEventListener eventListener) {
@@ -511,6 +519,7 @@ public class GuiController implements Initializable {
         }
         balloonPane.getChildren().clear();
         SoundManager.getInstance().stopGameOverSound();
+        SoundManager.getInstance().playPlaylist(java.util.Arrays.asList("music1.wav", "music2.wav", "music3.wav"));
         gameOverPanel.setVisible(false);
         eventListener.createNewGame();
         gamePanel.requestFocus();
