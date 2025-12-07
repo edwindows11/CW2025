@@ -16,12 +16,9 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
@@ -49,6 +46,9 @@ public class GuiController implements Initializable {
     private GridPane ghostPanel;
 
     @FXML
+    private GridPane nextBrickPanel;
+
+    @FXML
     private GridPane holdPanel;
 
     @FXML
@@ -65,7 +65,20 @@ public class GuiController implements Initializable {
     private Rectangle[][] rectangles;
     private Rectangle[][] ghostRectangles;
     private Rectangle[][] holdRectangles;
+    private java.util.List<Rectangle[][]> nextRectangles = new java.util.ArrayList<>();
     private Timeline timeLine;
+
+    // Optimization: Cache DropShadows to avoid creating them every frame
+    private final DropShadow[] shadowCache = new DropShadow[8];
+    private final DropShadow ghostShadow;
+
+    {
+        // Initialize ghost shadow
+        ghostShadow = new DropShadow();
+        ghostShadow.setColor(Color.web("#ffffff", 0.5));
+        ghostShadow.setRadius(10);
+        ghostShadow.setSpread(0.2);
+    }
 
     private final BooleanProperty isPause = new SimpleBooleanProperty();
     private final BooleanProperty isGameOver = new SimpleBooleanProperty();
@@ -84,18 +97,27 @@ public class GuiController implements Initializable {
                     keyEvent.consume();
                     return;
                 }
+                // Toggle Sound with M key
+                if (keyEvent.getCode() == KeyCode.M) {
+                    SoundManager.getInstance().toggleSound();
+                    keyEvent.consume();
+                    return;
+                }
 
                 if (!isPause.get() && !isGameOver.get()) {
                     if (keyEvent.getCode() == KeyCode.LEFT || keyEvent.getCode() == KeyCode.A) {
                         refreshBrick(eventListener.onLeftEvent(new MoveEvent(EventType.LEFT, EventSource.USER)));
+                        SoundManager.getInstance().playSound("clear.wav");
                         keyEvent.consume();
                     }
                     if (keyEvent.getCode() == KeyCode.RIGHT || keyEvent.getCode() == KeyCode.D) {
                         refreshBrick(eventListener.onRightEvent(new MoveEvent(EventType.RIGHT, EventSource.USER)));
+                        SoundManager.getInstance().playSound("clear.wav");
                         keyEvent.consume();
                     }
                     if (keyEvent.getCode() == KeyCode.UP || keyEvent.getCode() == KeyCode.W) {
                         refreshBrick(eventListener.onRotateEvent(new MoveEvent(EventType.ROTATE, EventSource.USER)));
+                        SoundManager.getInstance().playSound("rotate.wav");
                         keyEvent.consume();
                     }
                     if (keyEvent.getCode() == KeyCode.DOWN || keyEvent.getCode() == KeyCode.S) {
@@ -119,7 +141,11 @@ public class GuiController implements Initializable {
         final Reflection reflection = new Reflection();
         reflection.setFraction(0.8);
         reflection.setTopOpacity(0.9);
+        reflection.setTopOpacity(0.9);
         reflection.setTopOffset(-12);
+
+        // Start Playlist
+        SoundManager.getInstance().playPlaylist(java.util.Arrays.asList("music1.wav", "music2.wav", "music3.wav"));
     }
 
     private void togglePause() {
@@ -151,8 +177,20 @@ public class GuiController implements Initializable {
 
             javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene()
                     .getWindow();
+
+            boolean isFullScreen = stage.isFullScreen();
+            boolean isMaximized = stage.isMaximized();
+
             stage.setScene(new javafx.scene.Scene(root));
+
+            if (isFullScreen) {
+                stage.setFullScreen(true);
+            } else if (isMaximized) {
+                stage.setMaximized(true);
+            }
+
             stage.show();
+            SoundManager.getInstance().playBackgroundMusic("menu.wav");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -182,7 +220,7 @@ public class GuiController implements Initializable {
                 gameBoard.getLayoutX() + gamePanel.getLayoutX() + brick.getxPosition() * brickPanel.getVgap()
                         + brick.getxPosition() * BRICK_SIZE);
         brickPanel.setLayoutY(
-                -42 + gameBoard.getLayoutY() + gamePanel.getLayoutY() + brick.getyPosition() * brickPanel.getHgap()
+                -36 + gameBoard.getLayoutY() + gamePanel.getLayoutY() + brick.getyPosition() * brickPanel.getHgap()
                         + brick.getyPosition() * BRICK_SIZE);
 
         ghostRectangles = new Rectangle[brick.getBrickData().length][brick.getBrickData()[0].length];
@@ -195,6 +233,22 @@ public class GuiController implements Initializable {
             }
         }
 
+        // Initialize Next Piece Rectangles (3 pieces)
+        nextRectangles.clear();
+        for (int k = 0; k < 3; k++) {
+            Rectangle[][] nextMatrix = new Rectangle[4][4];
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                    rectangle.setFill(Color.TRANSPARENT);
+                    nextMatrix[i][j] = rectangle;
+                    // proper spacing: each piece takes 4 rows, plus 1 row gap -> offset = k * 5
+                    nextBrickPanel.add(rectangle, j, i + (k * 5));
+                }
+            }
+            nextRectangles.add(nextMatrix);
+        }
+
         holdRectangles = new Rectangle[4][4];
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
@@ -205,11 +259,13 @@ public class GuiController implements Initializable {
             }
         }
 
-        timeLine = new Timeline(new KeyFrame(
-                Duration.millis(400),
-                ae -> moveDown(new MoveEvent(EventType.DOWN, EventSource.THREAD))));
+        timeLine = new Timeline(
+                new KeyFrame(Duration.millis(400), ae -> moveDown(new MoveEvent(EventType.DOWN, EventSource.THREAD))));
         timeLine.setCycleCount(Timeline.INDEFINITE);
         timeLine.play();
+
+        // Render the initial state of next/hold bricks
+        refreshBrick(brick);
     }
 
     private Paint getFillColor(int i) {
@@ -239,7 +295,7 @@ public class GuiController implements Initializable {
         if (!isPause.get()) {
             brickPanel.setLayoutX(gameBoard.getLayoutX() + gamePanel.getLayoutX()
                     + brick.getxPosition() * brickPanel.getVgap() + brick.getxPosition() * BRICK_SIZE);
-            brickPanel.setLayoutY(-42 + gameBoard.getLayoutY() + gamePanel.getLayoutY()
+            brickPanel.setLayoutY(-36 + gameBoard.getLayoutY() + gamePanel.getLayoutY()
                     + brick.getyPosition() * brickPanel.getHgap() + brick.getyPosition() * BRICK_SIZE);
             for (int i = 0; i < brick.getBrickData().length; i++) {
                 for (int j = 0; j < brick.getBrickData()[i].length; j++) {
@@ -250,7 +306,7 @@ public class GuiController implements Initializable {
             // Update Ghost Panel Layout
             ghostPanel.setLayoutX(gameBoard.getLayoutX() + gamePanel.getLayoutX()
                     + brick.getxPosition() * brickPanel.getVgap() + brick.getxPosition() * BRICK_SIZE);
-            ghostPanel.setLayoutY(-42 + gameBoard.getLayoutY() + gamePanel.getLayoutY()
+            ghostPanel.setLayoutY(-36 + gameBoard.getLayoutY() + gamePanel.getLayoutY()
                     + brick.getGhostYPosition() * brickPanel.getHgap() + brick.getGhostYPosition() * BRICK_SIZE);
 
             // Update Hold Panel
@@ -259,6 +315,18 @@ public class GuiController implements Initializable {
                     for (int j = 0; j < brick.getHoldBrickData()[i].length; j++) {
                         setRectangleData(brick.getHoldBrickData()[i][j], holdRectangles[i][j]);
                     }
+                }
+            }
+        }
+
+        // Update Next Panels
+        java.util.List<int[][]> nextDataList = brick.getNextBrickData();
+        for (int k = 0; k < nextDataList.size() && k < nextRectangles.size(); k++) {
+            int[][] nextData = nextDataList.get(k);
+            Rectangle[][] nextRects = nextRectangles.get(k);
+            for (int i = 0; i < nextData.length; i++) {
+                for (int j = 0; j < nextData[i].length; j++) {
+                    setRectangleData(nextData[i][j], nextRects[i][j]);
                 }
             }
         }
@@ -277,11 +345,14 @@ public class GuiController implements Initializable {
         rectangle.setArcHeight(9);
         rectangle.setArcWidth(9);
         if (color != 0) {
-            DropShadow dropShadow = new DropShadow();
-            dropShadow.setColor((Color) getFillColor(color));
-            dropShadow.setRadius(10);
-            dropShadow.setSpread(0.4);
-            rectangle.setEffect(dropShadow);
+            if (shadowCache[color] == null) {
+                DropShadow dropShadow = new DropShadow();
+                dropShadow.setColor((Color) getFillColor(color));
+                dropShadow.setRadius(10);
+                dropShadow.setSpread(0.4);
+                shadowCache[color] = dropShadow;
+            }
+            rectangle.setEffect(shadowCache[color]);
         } else {
             rectangle.setEffect(null);
         }
@@ -296,11 +367,7 @@ public class GuiController implements Initializable {
             Color ghostColor = Color.web("#ffffff", 0.3);
             rectangle.setFill(ghostColor);
 
-            DropShadow dropShadow = new DropShadow();
-            dropShadow.setColor(Color.web("#ffffff", 0.5)); // Weaker glow for ghost
-            dropShadow.setRadius(10);
-            dropShadow.setSpread(0.2);
-            rectangle.setEffect(dropShadow);
+            rectangle.setEffect(ghostShadow);
         }
         rectangle.setArcHeight(9);
         rectangle.setArcWidth(9);
@@ -313,7 +380,9 @@ public class GuiController implements Initializable {
                 NotificationPanel notificationPanel = new NotificationPanel(
                         "+" + downData.getClearRow().getScoreBonus());
                 groupNotification.getChildren().add(notificationPanel);
+                groupNotification.getChildren().add(notificationPanel);
                 notificationPanel.showScore(groupNotification.getChildren());
+                SoundManager.getInstance().playSound("clear.wav");
             }
             refreshBrick(downData.getViewData());
         }
@@ -364,6 +433,8 @@ public class GuiController implements Initializable {
         timeLine.stop();
         gameOverPanel.setVisible(true);
         isGameOver.setValue(Boolean.TRUE);
+        SoundManager.getInstance().stopBackgroundMusic();
+        SoundManager.getInstance().playSound("gameover.wav");
     }
 
     public void newGame(ActionEvent actionEvent) {
