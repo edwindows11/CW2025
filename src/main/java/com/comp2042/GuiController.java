@@ -10,6 +10,8 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Group;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.effect.Reflection;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.input.KeyCode;
@@ -60,13 +62,18 @@ public class GuiController implements Initializable {
     @FXML
     private GameOverPanel gameOverPanel;
 
+    @FXML
+    private javafx.scene.layout.Pane balloonPane;
+
     private Rectangle[][] displayMatrix;
     private InputEventListener eventListener;
     private Rectangle[][] rectangles;
     private Rectangle[][] ghostRectangles;
     private Rectangle[][] holdRectangles;
+
     private java.util.List<Rectangle[][]> nextRectangles = new java.util.ArrayList<>();
     private Timeline timeLine;
+    private Timeline balloonTimeline;
 
     // Optimization: Cache DropShadows to avoid creating them every frame
     private final DropShadow[] shadowCache = new DropShadow[8];
@@ -147,6 +154,86 @@ public class GuiController implements Initializable {
 
         // Start Playlist
         SoundManager.getInstance().playPlaylist(java.util.Arrays.asList("music1.wav", "music2.wav", "music3.wav"));
+
+        if (volumeSlider != null) {
+            volumeSlider.setValue(SoundManager.getInstance().getVolume() * 100);
+            volumeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+                SoundManager.getInstance().setVolume(newVal.doubleValue() / 100.0);
+            });
+        }
+    }
+
+    @FXML
+    private javafx.scene.control.Slider volumeSlider;
+
+    public void initGameView(int[][] boardMatrix, ViewData brick) {
+        displayMatrix = new Rectangle[boardMatrix.length][boardMatrix[0].length];
+        for (int i = 2; i < boardMatrix.length; i++) {
+            for (int j = 0; j < boardMatrix[i].length; j++) {
+                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                rectangle.setFill(Color.TRANSPARENT);
+                // Add grid stroke
+                rectangle.setStroke(Color.web("#ffffff", 0.1));
+                rectangle.setStrokeType(javafx.scene.shape.StrokeType.INSIDE);
+                displayMatrix[i][j] = rectangle;
+                gamePanel.add(rectangle, j, i - 2);
+            }
+        }
+
+        rectangles = new Rectangle[brick.getBrickData().length][brick.getBrickData()[0].length];
+        for (int i = 0; i < brick.getBrickData().length; i++) {
+            for (int j = 0; j < brick.getBrickData()[i].length; j++) {
+                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                rectangle.setFill(getFillColor(brick.getBrickData()[i][j]));
+                rectangles[i][j] = rectangle;
+                brickPanel.add(rectangle, j, i);
+            }
+        }
+        brickPanel.setLayoutX(gameBoard.getLayoutX() + gamePanel.getLayoutX()
+                + brick.getxPosition() * brickPanel.getVgap() + brick.getxPosition() * BRICK_SIZE);
+        brickPanel.setLayoutY(-36 + gameBoard.getLayoutY() + gamePanel.getLayoutY()
+                + brick.getyPosition() * brickPanel.getHgap() + brick.getyPosition() * BRICK_SIZE);
+
+        ghostRectangles = new Rectangle[brick.getBrickData().length][brick.getBrickData()[0].length];
+        for (int i = 0; i < brick.getBrickData().length; i++) {
+            for (int j = 0; j < brick.getBrickData()[i].length; j++) {
+                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                rectangle.setFill(Color.TRANSPARENT);
+                ghostRectangles[i][j] = rectangle;
+                ghostPanel.add(rectangle, j, i);
+            }
+        }
+
+        nextRectangles.clear();
+        for (int k = 0; k < 3; k++) {
+            Rectangle[][] nextMatrix = new Rectangle[4][4];
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                    rectangle.setFill(Color.TRANSPARENT);
+                    nextMatrix[i][j] = rectangle;
+                    nextBrickPanel.add(rectangle, j, i + (k * 5));
+                }
+            }
+            nextRectangles.add(nextMatrix);
+        }
+
+        holdRectangles = new Rectangle[4][4];
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
+                rectangle.setFill(Color.TRANSPARENT);
+                holdRectangles[i][j] = rectangle;
+                holdPanel.add(rectangle, j, i);
+            }
+        }
+
+        timeLine = new Timeline(
+                new KeyFrame(Duration.millis(400), ae -> moveDown(new MoveEvent(EventType.DOWN, EventSource.THREAD))));
+        timeLine.setCycleCount(Timeline.INDEFINITE);
+        timeLine.play();
+
+        refreshBrick(brick);
     }
 
     private void togglePause() {
@@ -156,6 +243,9 @@ public class GuiController implements Initializable {
         isPause.set(!isPause.get());
         if (isPause.get()) {
             timeLine.pause();
+            if (volumeSlider != null) {
+                volumeSlider.setValue(SoundManager.getInstance().getVolume() * 100);
+            }
             pauseMenu.setVisible(true);
         } else {
             timeLine.play();
@@ -195,78 +285,6 @@ public class GuiController implements Initializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public void initGameView(int[][] boardMatrix, ViewData brick) {
-        displayMatrix = new Rectangle[boardMatrix.length][boardMatrix[0].length];
-        for (int i = 2; i < boardMatrix.length; i++) {
-            for (int j = 0; j < boardMatrix[i].length; j++) {
-                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
-                rectangle.setFill(Color.TRANSPARENT);
-                displayMatrix[i][j] = rectangle;
-                gamePanel.add(rectangle, j, i - 2);
-            }
-        }
-
-        rectangles = new Rectangle[brick.getBrickData().length][brick.getBrickData()[0].length];
-        for (int i = 0; i < brick.getBrickData().length; i++) {
-            for (int j = 0; j < brick.getBrickData()[i].length; j++) {
-                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
-                rectangle.setFill(getFillColor(brick.getBrickData()[i][j]));
-                rectangles[i][j] = rectangle;
-                brickPanel.add(rectangle, j, i);
-            }
-        }
-        brickPanel.setLayoutX(
-                gameBoard.getLayoutX() + gamePanel.getLayoutX() + brick.getxPosition() * brickPanel.getVgap()
-                        + brick.getxPosition() * BRICK_SIZE);
-        brickPanel.setLayoutY(
-                -36 + gameBoard.getLayoutY() + gamePanel.getLayoutY() + brick.getyPosition() * brickPanel.getHgap()
-                        + brick.getyPosition() * BRICK_SIZE);
-
-        ghostRectangles = new Rectangle[brick.getBrickData().length][brick.getBrickData()[0].length];
-        for (int i = 0; i < brick.getBrickData().length; i++) {
-            for (int j = 0; j < brick.getBrickData()[i].length; j++) {
-                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
-                rectangle.setFill(Color.TRANSPARENT);
-                ghostRectangles[i][j] = rectangle;
-                ghostPanel.add(rectangle, j, i);
-            }
-        }
-
-        // Initialize Next Piece Rectangles (3 pieces)
-        nextRectangles.clear();
-        for (int k = 0; k < 3; k++) {
-            Rectangle[][] nextMatrix = new Rectangle[4][4];
-            for (int i = 0; i < 4; i++) {
-                for (int j = 0; j < 4; j++) {
-                    Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
-                    rectangle.setFill(Color.TRANSPARENT);
-                    nextMatrix[i][j] = rectangle;
-                    // proper spacing: each piece takes 4 rows, plus 1 row gap -> offset = k * 5
-                    nextBrickPanel.add(rectangle, j, i + (k * 5));
-                }
-            }
-            nextRectangles.add(nextMatrix);
-        }
-
-        holdRectangles = new Rectangle[4][4];
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                Rectangle rectangle = new Rectangle(BRICK_SIZE, BRICK_SIZE);
-                rectangle.setFill(Color.TRANSPARENT);
-                holdRectangles[i][j] = rectangle;
-                holdPanel.add(rectangle, j, i);
-            }
-        }
-
-        timeLine = new Timeline(
-                new KeyFrame(Duration.millis(400), ae -> moveDown(new MoveEvent(EventType.DOWN, EventSource.THREAD))));
-        timeLine.setCycleCount(Timeline.INDEFINITE);
-        timeLine.play();
-
-        // Render the initial state of next/hold bricks
-        refreshBrick(brick);
     }
 
     private Paint getFillColor(int i) {
@@ -436,10 +454,55 @@ public class GuiController implements Initializable {
         isGameOver.setValue(Boolean.TRUE);
         SoundManager.getInstance().stopBackgroundMusic();
         SoundManager.getInstance().playSound("gameover.wav");
+        startBalloonAnimation();
+    }
+
+    private void startBalloonAnimation() {
+        if (balloonTimeline != null) {
+            balloonTimeline.stop();
+        }
+        balloonTimeline = new Timeline(new KeyFrame(Duration.millis(300), event -> {
+            javafx.scene.Node balloon = createBalloon();
+            if (balloon != null) {
+                double startX = Math.random() * 600;
+                balloon.setLayoutX(startX);
+                balloon.setLayoutY(600);
+                balloonPane.getChildren().add(balloon);
+
+                javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(
+                        Duration.seconds(4 + Math.random() * 2), balloon);
+                tt.setToY(-700);
+                tt.setOnFinished(e -> balloonPane.getChildren().remove(balloon));
+                tt.play();
+            }
+        }));
+        balloonTimeline.setCycleCount(Timeline.INDEFINITE);
+        balloonTimeline.play();
+    }
+
+    private javafx.scene.Node createBalloon() {
+        int index = (int) (Math.random() * 5) + 1;
+        try {
+            String path = "/balloon" + index + ".png";
+            if (getClass().getResource(path) != null) {
+                ImageView imageView = new ImageView(new Image(getClass().getResourceAsStream(path)));
+                imageView.setPreserveRatio(true);
+                imageView.setFitWidth(50);
+                return imageView;
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public void newGame(ActionEvent actionEvent) {
         timeLine.stop();
+        if (balloonTimeline != null) {
+            balloonTimeline.stop();
+        }
+        balloonPane.getChildren().clear();
         SoundManager.getInstance().stopGameOverSound();
         gameOverPanel.setVisible(false);
         eventListener.createNewGame();

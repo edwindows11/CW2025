@@ -12,6 +12,8 @@ public class SoundManager {
     private boolean isMuted = false;
     private List<String> playlist;
     private int currentPlaylistIndex = 0;
+    private Clip gameOverClip;
+    private double currentVolume = 1.0;
 
     private SoundManager() {
         // Private constructor for singleton
@@ -22,6 +24,33 @@ public class SoundManager {
             instance = new SoundManager();
         }
         return instance;
+    }
+
+    public double getVolume() {
+        return currentVolume;
+    }
+
+    public void setVolume(double volume) {
+        this.currentVolume = Math.max(0.0, Math.min(1.0, volume));
+        setClipVolume(backgroundMusic);
+        setClipVolume(gameOverClip);
+    }
+
+    private void setClipVolume(Clip clip) {
+        if (clip != null && clip.isOpen()) {
+            try {
+                if (clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+                    FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+                    float db = (float) (Math.log10(Math.max(0.0001, currentVolume)) * 20.0);
+                    // Standard range is often -80.0 to 6.0
+                    // Ensure we don't go below minimum supported
+                    db = Math.max(gainControl.getMinimum(), Math.min(gainControl.getMaximum(), db));
+                    gainControl.setValue(db);
+                }
+            } catch (Exception e) {
+                System.err.println("Volume control error: " + e.getMessage());
+            }
+        }
     }
 
     public void playBackgroundMusic(String fileName) {
@@ -49,6 +78,7 @@ public class SoundManager {
                 AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(resource);
                 backgroundMusic = AudioSystem.getClip();
                 backgroundMusic.open(audioInputStream);
+                setClipVolume(backgroundMusic);
 
                 if (loop) {
                     backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY);
@@ -80,7 +110,7 @@ public class SoundManager {
             // Remove listeners to prevent auto-triggering next song on manual stop
             // (Though standard removeLineListener requires reference to the specific
             // listener object,
-            // closing the clip will trigger STOP, so we handle null playlist check in
+            // closing the clip will trigger STOP, so handle null playlist check in
             // listener)
             if (backgroundMusic.isRunning()) {
                 backgroundMusic.stop();
@@ -95,6 +125,16 @@ public class SoundManager {
         stopCurrentMusic();
     }
 
+    public void stopGameOverSound() {
+        if (gameOverClip != null) {
+            if (gameOverClip.isRunning()) {
+                gameOverClip.stop();
+            }
+            gameOverClip.close();
+            gameOverClip = null;
+        }
+    }
+
     public void playSound(String fileName) {
         if (isMuted)
             return;
@@ -105,6 +145,13 @@ public class SoundManager {
                 AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(resource);
                 Clip clip = AudioSystem.getClip();
                 clip.open(audioInputStream);
+
+                if ("gameover.wav".equals(fileName)) {
+                    stopGameOverSound(); // Stop previous if any
+                    gameOverClip = clip;
+                }
+
+                setClipVolume(clip);
                 clip.start();
             }
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {

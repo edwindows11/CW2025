@@ -10,8 +10,16 @@ import javafx.scene.Parent;
 public class MainMenuController {
 
     @FXML
+    private javafx.scene.control.Slider volumeSlider;
+
+    @FXML
     public void initialize() {
-        // Optional: any setup code
+        if (volumeSlider != null) {
+            volumeSlider.setValue(SoundManager.getInstance().getVolume() * 100);
+            volumeSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
+                SoundManager.getInstance().setVolume(newValue.doubleValue() / 100.0);
+            });
+        }
     }
 
     @FXML
@@ -21,7 +29,15 @@ public class MainMenuController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/gameLayout.fxml"));
             Parent root = loader.load();
             GuiController c = loader.getController();
-            new GameController(c);
+            // c.setVolume(volumeSlider.getValue()); // Pass volume if needed, but
+            // SoundManager is singleton
+
+            GameController gameController = new GameController(c); // Use existing constructor if applicable, or just
+                                                                   // c.init
+            // The previous code had new GameController(c) which implies GameController
+            // logic exists.
+            // Warning: Original file didn't show GameController class but used it. Assuming
+            // it works.
 
             Stage stage = (Stage) ((javafx.scene.Node) event.getSource())
                     .getScene().getWindow();
