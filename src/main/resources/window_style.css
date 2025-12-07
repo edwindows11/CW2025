@@ -1,5 +1,6 @@
 .root {
-    -fx-background-image: url("background_image.png");
+    -fx-background-image: url("background_dark.png");
+    -fx-background-size: cover;
 }
 
 .nextBrick {
@@ -9,9 +10,11 @@
 }
 
 .gameBoard {
-    -fx-border-color: linear-gradient(#2A5058, #61a2b1);
-    -fx-border-width: 12px;
+    -fx-border-color: cyan;
+    -fx-border-width: 5px;
     -fx-border-radius: 12px;
+    -fx-background-image: url("background_image.png");
+    -fx-effect: dropshadow(three-pass-box, cyan, 15, 0.4, 0, 0);
 }
 
 .nextBrickLabel {
@@ -23,10 +26,10 @@
 
 .ipad-dark-grey {
     -fx-background-color: linear-gradient(#686868 0%, #232723 25%, #373837 75%, #757575 100%),
-    linear-gradient(#020b02, #3a3a3a),
-    linear-gradient(#9d9e9d 0%, #6b6a6b 20%, #343534 80%, #242424 100%),
-    linear-gradient(#8a8a8a 0%, #6b6a6b 20%, #343534 80%, #262626 100%),
-    linear-gradient(#777777 0%, #606060 50%, #505250 51%, #2a2b2a 100%);
+        linear-gradient(#020b02, #3a3a3a),
+        linear-gradient(#9d9e9d 0%, #6b6a6b 20%, #343534 80%, #242424 100%),
+        linear-gradient(#8a8a8a 0%, #6b6a6b 20%, #343534 80%, #262626 100%),
+        linear-gradient(#777777 0%, #606060 50%, #505250 51%, #2a2b2a 100%);
     -fx-background-insets: 0, 1, 4, 5, 6;
     -fx-background-radius: 9, 8, 5, 4, 3;
     -fx-padding: 8;
@@ -60,13 +63,59 @@
 
 .gameOverStyle {
     -fx-font-family: "Let's go Digital";
-    -fx-font-size: 48;
-    -fx-background-color: red;
+    -fx-font-size: 38;
+    -fx-text-fill: #ff0033;
+    -fx-effect: dropshadow(three-pass-box, #ff0033, 10, 0.3, 0, 0);
+    -fx-background-color: transparent;
 }
 
-.scoreClass{
+.scoreClass {
     -fx-font-family: "Let's go Digital";
-    -fx-font-size: 38;
-    -fx-fill: yellow;
-    -fx-text-fill: yellow;
+    -fx-font-size: 22;
+    -fx-fill: white;
+    -fx-text-fill: white;
+}
+
+.menu-button {
+    -fx-font-family: "Let's go Digital";
+    -fx-font-size: 30px;
+    -fx-text-fill: cyan;
+    -fx-background-color: transparent;
+    -fx-border-color: cyan;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-effect: dropshadow(three-pass-box, cyan, 10, 0, 0, 0);
+    -fx-cursor: hand;
+}
+
+.menu-button:hover {
+    -fx-text-fill: white;
+    -fx-border-color: white;
+    -fx-effect: dropshadow(three-pass-box, magenta, 15, 0, 0, 0);
+}
+
+.menu-title {
+    -fx-font-family: "Let's go Digital";
+    -fx-font-size: 60px;
+    -fx-text-fill: magenta;
+    -fx-effect: dropshadow(three-pass-box, magenta, 15, 0, 0, 0);
+}
+
+.playAgainButton {
+    -fx-font-family: "Let's go Digital";
+    -fx-font-size: 24px;
+    -fx-text-fill: #00ff00;
+    -fx-background-color: transparent;
+    -fx-border-color: #00ff00;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-effect: dropshadow(three-pass-box, #00ff00, 5, 0.2, 0, 0);
+    -fx-cursor: hand;
+    -fx-padding: 5 15 5 15;
+}
+
+.playAgainButton:hover {
+    -fx-text-fill: white;
+    -fx-border-color: white;
+    -fx-effect: dropshadow(three-pass-box, #00ff00, 10, 0.4, 0, 0);
 }
