@@ -259,9 +259,13 @@ public class GuiController implements Initializable {
             if (volumeSlider != null) {
                 volumeSlider.setValue(SoundManager.getInstance().getVolume() * 100);
             }
+            SoundManager.getInstance().playSound("pause.wav");
+            SoundManager.getInstance().pauseBackgroundMusic();
             pauseMenu.setVisible(true);
         } else {
             timeLine.play();
+            SoundManager.getInstance().resumeBackgroundMusic();
+            SoundManager.getInstance().stopPauseSound();
             pauseMenu.setVisible(false);
             gamePanel.requestFocus();
         }
@@ -276,6 +280,7 @@ public class GuiController implements Initializable {
     private void backToMenu(ActionEvent event) {
         try {
             timeLine.stop();
+            SoundManager.getInstance().stopPauseSound();
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/mainMenu.fxml"));
             Parent root = loader.load();
 
@@ -532,5 +537,4 @@ public class GuiController implements Initializable {
         togglePause();
         gamePanel.requestFocus();
     }
-
 }

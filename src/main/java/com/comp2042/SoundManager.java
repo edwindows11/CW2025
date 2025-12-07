@@ -13,7 +13,9 @@ public class SoundManager {
     private List<String> playlist;
     private int currentPlaylistIndex = 0;
     private Clip gameOverClip;
+    private Clip pauseClip;
     private double currentVolume = 1.0;
+    private boolean isPaused = false;
 
     private SoundManager() {
         // Private constructor for singleton
@@ -87,7 +89,7 @@ public class SoundManager {
                     backgroundMusic.addLineListener(event -> {
                         if (event.getType() == LineEvent.Type.STOP) {
                             // Check if we are still in playlist mode and it wasn't manually stopped
-                            if (playlist != null && backgroundMusic != null && !isMuted) {
+                            if (playlist != null && backgroundMusic != null && !isMuted && !isPaused) {
                                 backgroundMusic.close(); // Close resources
                                 currentPlaylistIndex = (currentPlaylistIndex + 1) % playlist.size();
                                 startMusic(playlist.get(currentPlaylistIndex), false);
@@ -135,6 +137,30 @@ public class SoundManager {
         }
     }
 
+    public void stopPauseSound() {
+        if (pauseClip != null) {
+            if (pauseClip.isRunning()) {
+                pauseClip.stop();
+            }
+            pauseClip.close();
+            pauseClip = null;
+        }
+    }
+
+    public void pauseBackgroundMusic() {
+        isPaused = true;
+        if (backgroundMusic != null && backgroundMusic.isRunning()) {
+            backgroundMusic.stop();
+        }
+    }
+
+    public void resumeBackgroundMusic() {
+        isPaused = false;
+        if (backgroundMusic != null && !backgroundMusic.isRunning() && !isMuted) {
+            backgroundMusic.start();
+        }
+    }
+
     public void playSound(String fileName) {
         if (isMuted)
             return;
@@ -149,6 +175,9 @@ public class SoundManager {
                 if ("gameover.wav".equals(fileName)) {
                     stopGameOverSound(); // Stop previous if any
                     gameOverClip = clip;
+                } else if ("pause.wav".equals(fileName)) {
+                    stopPauseSound();
+                    pauseClip = clip;
                 }
 
                 setClipVolume(clip);
